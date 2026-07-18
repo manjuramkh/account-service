@@ -13,10 +13,10 @@ import lombok.Getter;
 import lombok.Setter;
 
 
-@Entity
 @Getter
 @Setter
 @Data
+@Entity
 @Table(name = "accounts")
 public class Account {
 
