@@ -191,4 +191,163 @@ public class AccountServiceTest {
         verify(accountRepository).findAll();
     }
 
+    @Test
+    public void testDebit_Success() {
+        // Arrange
+        UUID accountId = mockAccount.getId();
+        when(accountRepository.findByIdForUpdate(eq(accountId))).thenReturn(java.util.Optional.of(mockAccount));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        com.bank.account_service.dto.DebitRequest debitRequest = new com.bank.account_service.dto.DebitRequest(mockAccount.getAccountNumber(), BigDecimal.valueOf(200));
+
+        // Act
+        Account result = accountService.debit(accountId, debitRequest);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(BigDecimal.valueOf(800), result.getBalance());
+        verify(accountRepository).findByIdForUpdate(eq(accountId));
+        verify(accountRepository).save(any(Account.class));
+    }
+
+    @Test
+    public void testDebit_InsufficientFunds() {
+        // Arrange
+        Account lowBalance = new Account();
+        lowBalance.setId(mockAccount.getId());
+        lowBalance.setAccountNumber(mockAccount.getAccountNumber());
+        lowBalance.setBalance(BigDecimal.valueOf(100));
+
+        UUID accountId = lowBalance.getId();
+        when(accountRepository.findByIdForUpdate(eq(accountId))).thenReturn(java.util.Optional.of(lowBalance));
+
+        com.bank.account_service.dto.DebitRequest debitRequest = new com.bank.account_service.dto.DebitRequest(lowBalance.getAccountNumber(), BigDecimal.valueOf(200));
+
+        // Act & Assert
+        com.bank.account_service.exception.InsufficientFundsException ex = assertThrows(
+                com.bank.account_service.exception.InsufficientFundsException.class,
+                () -> accountService.debit(accountId, debitRequest)
+        );
+        assertTrue(ex.getMessage().contains(lowBalance.getAccountNumber()));
+        verify(accountRepository).findByIdForUpdate(eq(accountId));
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    public void testDebit_AccountNotFound() {
+        // Arrange
+        UUID accountId = UUID.randomUUID();
+        when(accountRepository.findByIdForUpdate(eq(accountId))).thenReturn(java.util.Optional.empty());
+
+        com.bank.account_service.dto.DebitRequest debitRequest = new com.bank.account_service.dto.DebitRequest("NONEXIST", BigDecimal.valueOf(50));
+
+        // Act & Assert
+        NoSuchElementException ex = assertThrows(
+                NoSuchElementException.class,
+                () -> accountService.debit(accountId, debitRequest)
+        );
+        assertTrue(ex.getMessage().contains("Account not found"));
+        verify(accountRepository).findByIdForUpdate(eq(accountId));
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    public void testCredit_Success() {
+        // Arrange
+        UUID accountId = mockAccount.getId();
+        when(accountRepository.findByIdForUpdate(eq(accountId))).thenReturn(java.util.Optional.of(mockAccount));
+        when(accountRepository.save(any(Account.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        com.bank.account_service.dto.CreditRequest creditRequest = new com.bank.account_service.dto.CreditRequest();
+        creditRequest.setAmount(BigDecimal.valueOf(500));
+
+        // Act
+        Account result = accountService.credit(accountId, creditRequest);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(BigDecimal.valueOf(1500), result.getBalance());
+        verify(accountRepository).findByIdForUpdate(eq(accountId));
+        verify(accountRepository).save(any(Account.class));
+    }
+
+    @Test
+    public void testCredit_AccountNotFound() {
+        // Arrange
+        UUID accountId = UUID.randomUUID();
+        when(accountRepository.findByIdForUpdate(eq(accountId))).thenReturn(java.util.Optional.empty());
+
+        com.bank.account_service.dto.CreditRequest creditRequest = new com.bank.account_service.dto.CreditRequest();
+        creditRequest.setAmount(BigDecimal.valueOf(100));
+
+        // Act & Assert
+        NoSuchElementException ex = assertThrows(
+                NoSuchElementException.class,
+                () -> accountService.credit(accountId, creditRequest)
+        );
+        assertTrue(ex.getMessage().contains("Account not found"));
+        verify(accountRepository).findByIdForUpdate(eq(accountId));
+        verify(accountRepository, never()).save(any());
+    }
+
+    @Test
+    public void testGetAccount_Success() {
+        // Arrange
+        String accNum = mockAccount.getAccountNumber();
+        when(accountRepository.findByAccountNumber(eq(accNum))).thenReturn(java.util.Optional.of(mockAccount));
+
+        // Act
+        Account result = accountService.getAccount(accNum);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(accNum, result.getAccountNumber());
+        verify(accountRepository).findByAccountNumber(eq(accNum));
+    }
+
+    @Test
+    public void testGetAccount_NotFound() {
+        // Arrange
+        String accNum = "NOACC";
+        when(accountRepository.findByAccountNumber(eq(accNum))).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        com.bank.account_service.exception.NoAccountFoundException ex = assertThrows(
+                com.bank.account_service.exception.NoAccountFoundException.class,
+                () -> accountService.getAccount(accNum)
+        );
+        assertTrue(ex.getMessage().contains("Account not found"));
+        verify(accountRepository).findByAccountNumber(eq(accNum));
+    }
+
+    @Test
+    public void testGetAccountById_Success() {
+        // Arrange
+        UUID id = mockAccount.getId();
+        when(accountRepository.findById(eq(id))).thenReturn(java.util.Optional.of(mockAccount));
+
+        // Act
+        Account result = accountService.getAccountById(id);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(id, result.getId());
+        verify(accountRepository).findById(eq(id));
+    }
+
+    @Test
+    public void testGetAccountById_NotFound() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        when(accountRepository.findById(eq(id))).thenReturn(java.util.Optional.empty());
+
+        // Act & Assert
+        com.bank.account_service.exception.NoAccountFoundException ex = assertThrows(
+                com.bank.account_service.exception.NoAccountFoundException.class,
+                () -> accountService.getAccountById(id)
+        );
+        assertTrue(ex.getMessage().contains("Account not found"));
+        verify(accountRepository).findById(eq(id));
+    }
+
 }
