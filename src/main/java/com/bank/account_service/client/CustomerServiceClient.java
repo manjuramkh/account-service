@@ -37,7 +37,7 @@ public class CustomerServiceClient {
         }
     }
 
-    private boolean isVerifiedFallback(UUID customerId, Throwable throwable) {
+    private boolean isVerifiedFallback(Throwable throwable) {
         // Log the exception or handle it as needed
         logger.warning("Fallback method called for isVerified due to: {}"+ throwable.getMessage());
         return false; // Return a default value or handle the fallback logic
