@@ -157,4 +157,38 @@ public class AccountServiceTest {
         verify(accountRepository).save(any(Account.class));
     }
 
+    @Test
+    public void testGetAllAccounts_ReturnsMappedResponses() {
+        // Arrange
+        Account account1 = new Account();
+        account1.setId(UUID.randomUUID());
+        account1.setAccountNumber("ACC1");
+        account1.setIfscCode("IFSC1");
+        account1.setCustomerId(customerId);
+        account1.setAccountType(AccountType.SAVING);
+        account1.setStatus(com.bank.account_service.domain.AccountStatus.ACTIVE);
+        account1.setBalance(BigDecimal.valueOf(1000));
+
+        Account account2 = new Account();
+        account2.setId(UUID.randomUUID());
+        account2.setAccountNumber("ACC2");
+        account2.setIfscCode("IFSC2");
+        account2.setCustomerId(customerId);
+        account2.setAccountType(AccountType.CREDIT);
+        account2.setStatus(com.bank.account_service.domain.AccountStatus.ACTIVE);
+        account2.setBalance(BigDecimal.valueOf(1500));
+
+        when(accountRepository.findAll()).thenReturn(java.util.List.of(account1, account2));
+
+        // Act
+        java.util.List<com.bank.account_service.dto.AccountResponse> responses = accountService.getAllAccounts();
+
+        // Assert
+        assertNotNull(responses);
+        assertEquals(2, responses.size());
+        assertEquals(account1.getAccountNumber(), responses.get(0).accountNumber());
+        assertEquals(account2.getAccountNumber(), responses.get(1).accountNumber());
+        verify(accountRepository).findAll();
+    }
+
 }
