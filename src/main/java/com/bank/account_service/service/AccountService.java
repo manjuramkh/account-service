@@ -4,6 +4,8 @@ import com.bank.account_service.client.CustomerServiceClient;
 import com.bank.account_service.domain.Account;
 import com.bank.account_service.dto.AccountResponse;
 import com.bank.account_service.dto.CreateAccountRequest;
+import com.bank.account_service.dto.CreditRequest;
+import com.bank.account_service.dto.DebitRequest;
 import com.bank.account_service.events.AccountEventProducer;
 import com.bank.account_service.exception.InsufficientFundsException;
 import com.bank.account_service.exception.MinimumBalanceException;
@@ -11,6 +13,7 @@ import com.bank.account_service.exception.NoAccountFoundException;
 import com.bank.account_service.mapper.AccountMapper;
 import com.bank.account_service.repos.AccountReportRepository;
 import com.bank.account_service.repos.AccountRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Service
 public class AccountService {
 
@@ -65,17 +69,18 @@ public class AccountService {
     }
 
     @Transactional
-    public Account debit(UUID accountId, BigDecimal amount, String reason) {
+    public Account debit(UUID accountId, DebitRequest debitRequest) {
         // lock the row for the duration of this DB transaction
         Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NoSuchElementException("Account not found: " + accountId));
 
-        if (account.getBalance().compareTo(amount) < 0) {
+        if (account.getBalance().compareTo(debitRequest.amount()) < 0) {
+            log.error("Insufficient funds for account {}: requested {}, available {}", account.getAccountNumber(), debitRequest.amount(), account.getBalance());
             throw new InsufficientFundsException(account.getAccountNumber());
         }
 
         BigDecimal previous = account.getBalance();
-        account.setBalance(previous.subtract(amount));
+        account.setBalance(previous.subtract(debitRequest.amount()));
         Account saved = accountRepository.save(account);
 
         // event fires after the DB write; a Kafka outbox pattern is safer for production
@@ -88,12 +93,12 @@ public class AccountService {
     }
 
     @Transactional
-    public Account credit(UUID accountId, BigDecimal amount, String reason) {
+    public Account credit(UUID accountId, CreditRequest creditRequest) {
         Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new NoSuchElementException("Account not found: " + accountId));
 
         BigDecimal previous = account.getBalance();
-        account.setBalance(previous.add(amount));
+        account.setBalance(previous.add(creditRequest.getAmount()));
         Account saved = accountRepository.save(account);
 
 //        eventProducer.publishBalanceChanged(new BalanceChangedEvent(

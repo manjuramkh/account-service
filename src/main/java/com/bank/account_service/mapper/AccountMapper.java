@@ -9,6 +9,7 @@ public class AccountMapper {
 
     public AccountResponse toResponse(Account account) {
         return new AccountResponse(
+                account.getId(),
                 account.getAccountNumber(),
                 account.getIfscCode(),
                 account.getCustomerId().toString(),
