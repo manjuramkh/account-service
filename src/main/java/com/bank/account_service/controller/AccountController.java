@@ -2,6 +2,7 @@ package com.bank.account_service.controller;
 
 
 import com.bank.account_service.domain.Account;
+import com.bank.account_service.domain.AccountType;
 import com.bank.account_service.dto.AccountResponse;
 import com.bank.account_service.dto.CreateAccountRequest;
 import com.bank.account_service.dto.CreditRequest;
@@ -79,5 +80,12 @@ public class AccountController {
     public ResponseEntity<AccountResponse> credit(@PathVariable UUID id, @RequestBody CreditRequest creditRequest) {
         Account account = accountService.credit(id, creditRequest);
         return ResponseEntity.ok(accountMapper.toResponse(account));
+    }
+
+
+    @GetMapping("/types")
+    public ResponseEntity<List<AccountResponse>> accountType(@RequestParam AccountType accountType) {
+        List<AccountResponse> accounts = accountService.getAccountByType(accountType);
+        return ResponseEntity.ok(accounts);
     }
 }
