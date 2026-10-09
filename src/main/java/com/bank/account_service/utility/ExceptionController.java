@@ -2,7 +2,8 @@ package com.bank.account_service.utility;
 
 import com.bank.account_service.exception.MinimumBalanceException;
 import com.bank.account_service.exception.NoAccountFoundException;
-import org.apache.juli.logging.Log;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -15,7 +16,7 @@ import java.util.logging.Logger;
 public class ExceptionController {
 
 //    Logger logger = Logger.getLogger(ExceptionController.class.getName());
-    Log logger = org.apache.juli.logging.LogFactory.getLog(ExceptionController.class);
+    Log logger = LogFactory.getLog(ExceptionController.class);
 
 
     @ExceptionHandler(NoAccountFoundException.class)
